@@ -21,6 +21,7 @@ typedef struct {
   char keyHit; // The keyboard key hit by the player at this frame.
   int  TankDirection_move;
   int  TankDirection_look;
+  int  shotCoolDown;
 } Game;
 
 // The game singleton.
@@ -50,6 +51,7 @@ void GameInit(void) {
   int nEnemies = config.nEnemies;
   int nSolids = config.nSolids;
   int nWalls = config.nWalls;
+  game.shotCoolDown = 0;
 
 
 
@@ -59,6 +61,16 @@ void GameInit(void) {
   RegInit(regBullet);
 
   map.flags = (Flag *)malloc(sizeof(Flag) * map.size.x * map.size.y);
+  
+
+  {
+    Tank *tank = RegNew(regTank);
+    tank->pos = (Vec){2, 1};
+    tank->dir = eDirOP;
+    tank->color = TK_GREEN;
+    tank->isPlayer = true;
+  }
+
   for (int y = 0; y < map.size.y; ++y)
     for (int x = 0; x < map.size.x; ++x) {
       Vec pos = {x, y};
@@ -69,19 +81,11 @@ void GameInit(void) {
 
       map.flags[Idx(pos)] = flag;
     }
+    
+  for (int i = 0; i < nWalls; i++){
 
-  {
-    Tank *tank = RegNew(regTank);
-    tank->pos = (Vec){2, 2};
-    tank->dir = eDirOP;
-    tank->color = TK_GREEN;
-    tank->isPlayer = true;
-  }
-
-  for (int i = 0; i< nWalls; i++){
-
-    int x = rand() % map.size.x;
-    int y = rand() % map.size.y;
+    int x = (rand() % (map.size.x - 4)) + 2;
+    int y = (rand() % (map.size.y - 4)) + 2;
     
     for(int xi = x; xi < x + 3 ; xi++){
       for(int yi = y; yi < y + 3; yi++){
@@ -128,18 +132,28 @@ void GameInit(void) {
 /// \note This function should be called in the loop of `GameLifecycle` before `GameUpdate`.
 void GameInput(void) {
   game.keyHit = kbhit_t() ? (char)getch_t() : '\0';
+  RegIterator it = RegBegin(regTank);
+  Tank *tank = RegEntry(regTank, it);
   if (game.keyHit == 'w') {
+    tank->dir = eDirOP;
     game.TankDirection_move = 0; // 上
     game.TankDirection_look = 0;
 } else if (game.keyHit == 'd') {
+    tank->dir = eDirPO;
     game.TankDirection_move = 1; // 右
     game.TankDirection_look = 1;
 } else if (game.keyHit =='s') {
+    tank->dir = eDirON;
     game.TankDirection_move = 2; // 下
     game.TankDirection_look = 2;
 } else if (game.keyHit == 'a') {
+    tank->dir = eDirNO;
     game.TankDirection_move = 3; // 左
     game.TankDirection_look = 3;
+} else if (game.keyHit == 'k' && game.shotCoolDown <= 0) {
+  // 这里假设后续会根据坦克朝向生成炮弹
+  // 先设置冷却时间为15帧
+  game.shotCoolDown = 15; 
 }
 }
 
@@ -208,9 +222,84 @@ void GameUpdate(void) {
           // } break;
       default:
           break;
+    }
+
+    
+
+
+    if (game.shotCoolDown == 15) {
+      Bullet *bullet = RegNew(regBullet);
+      bullet->pos = tank->pos;
+      bullet->dir = tank->dir;
+      bullet->color = tank->color;
+      bullet->isPlayer = tank->isPlayer;
+    }
+    if (game.shotCoolDown > 0) {
+      --game.shotCoolDown;
+    }
+    for (RegIterator it = RegBegin(regBullet); it != RegEnd(regBullet); it = RegNext(it)) {
+      Bullet *bullet = RegEntry(regBullet, it);
+      Vec newPos;
+      switch (bullet->dir) {
+          case eDirOP: // 上
+              newPos = Add(bullet->pos, (Vec){0, 1});
+              if (map.flags[Idx(newPos)] == eFlagNone) {
+                  // printf("%d",newPos.y);
+                  bullet->pos = newPos;
+              }
+              else if (map.flags[Idx(newPos)] == eFlagWall) {
+                map.flags[Idx(newPos)] = eFlagNone;
+                // printf("%d",newPos.y);
+                RegDelete(bullet);
+              } 
+              else {
+                // printf("%d",newPos.y);
+                RegDelete(bullet); // 遇到非空标志位删除炮弹
+              }
+              break;
+          case eDirPO: // 右
+              newPos = Add(bullet->pos, (Vec){1, 0});
+              if (map.flags[Idx(newPos)] == eFlagNone) {
+                bullet->pos = newPos;
+              } 
+              // if (map.flags[Idx(newPos)] == eFlagWall) {
+              //   RegDelete(bullet);
+              // } 
+              else {
+                RegDelete(bullet);
+              }
+              break;
+          case eDirON: // 下
+              newPos = Add(bullet->pos, (Vec){0, -1});
+              if (map.flags[Idx(newPos)] == eFlagNone) {
+                bullet->pos = newPos;
+              } 
+              // if (map.flags[Idx(newPos)] == eFlagWall) {
+              //   RegDelete(bullet);
+              // } 
+              else {
+                RegDelete(bullet);
+              }
+              break;
+          case eDirNO: // 左
+              newPos = Add(bullet->pos, (Vec){-1, 0});
+              if (map.flags[Idx(newPos)] == eFlagNone) {
+                bullet->pos = newPos;
+              } 
+              // if (map.flags[Idx(newPos)] == eFlagWall) {
+              //   RegDelete(bullet);
+              // } 
+              else {
+                RegDelete(bullet);
+              }
+              break;
+          default:
+              break;
+      }
+    }
   }
   
-  }
+  
 
   RdrRender(game.TankDirection_look);
   RdrFlush();
