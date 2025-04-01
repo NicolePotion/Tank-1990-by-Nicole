@@ -21,7 +21,6 @@ typedef struct {
   char keyHit; // The keyboard key hit by the player at this frame.
   int  TankDirection_move;
   int  TankDirection_look;
-  int  shotCoolDown;
 } Game;
 
 // The game singleton.
@@ -51,10 +50,6 @@ void GameInit(void) {
   int nEnemies = config.nEnemies;
   int nSolids = config.nSolids;
   int nWalls = config.nWalls;
-  game.shotCoolDown = 0;
-
-
-
 
   // Initialize scene.
   RegInit(regTank);
@@ -69,6 +64,7 @@ void GameInit(void) {
     tank->dir = eDirOP;
     tank->color = TK_GREEN;
     tank->isPlayer = true;
+    tank->cool = 0;
   }
 
   for (int y = 0; y < map.size.y; ++y)
@@ -150,10 +146,10 @@ void GameInput(void) {
     tank->dir = eDirNO;
     game.TankDirection_move = 3; // 左
     game.TankDirection_look = 3;
-} else if (game.keyHit == 'k' && game.shotCoolDown <= 0) {
+} else if (game.keyHit == 'k' && tank->cool <= 0) {
   // 这里假设后续会根据坦克朝向生成炮弹
   // 先设置冷却时间为15帧
-  game.shotCoolDown = 15; 
+    tank->cool = 15; 
 }
 }
 
@@ -171,8 +167,7 @@ void GameUpdate(void) {
   // TODO: You may need to delete or add codes here.
   for (RegIterator it = RegBegin(regTank); it != RegEnd(regTank); it = RegNext(it)) {
     Tank *tank = RegEntry(regTank, it);
-    // if (tank->pos.y < map.size.y - 3)
-    //   ++tank->pos.y;
+
     switch (game.TankDirection_move) {
       case 0: // 上
           Vec pos1 = {tank->pos.x - 1,tank->pos.y + 2};
@@ -192,9 +187,6 @@ void GameUpdate(void) {
           && map.flags[Idx(pos6)] == eFlagNone) {
               ++tank->pos.x;
           }break;
-          // if (tank->pos.x < map.size.x - 3) {
-          //     ++tank->pos.x;
-          // }break;
       case 2: // 下
           Vec pos7 = {tank->pos.x - 1,tank->pos.y - 2};
           Vec pos8 = {tank->pos.x,tank->pos.y - 2};
@@ -204,10 +196,6 @@ void GameUpdate(void) {
           && map.flags[Idx(pos9)] == eFlagNone) {
               --tank->pos.y;
           }break;
-          // if (tank->pos.y > 2) {
-          //     --tank->pos.y;
-          //     // printf("%d",tank->pos.y);
-          // }break;
       case 3: // 左
           Vec pos10 = {tank->pos.x - 2,tank->pos.y - 1};
           Vec pos11 = {tank->pos.x - 2,tank->pos.y};
@@ -217,9 +205,6 @@ void GameUpdate(void) {
           && map.flags[Idx(pos12)] == eFlagNone) {
               --tank->pos.x;
           }break;
-          // if (tank->pos.x > 2) {
-          //     --tank->pos.x;
-          // } break;
       default:
           break;
     }
@@ -227,15 +212,16 @@ void GameUpdate(void) {
     
 
 
-    if (game.shotCoolDown == 15) {
+    if (tank->cool == 15) {
       Bullet *bullet = RegNew(regBullet);
       bullet->pos = tank->pos;
       bullet->dir = tank->dir;
       bullet->color = tank->color;
       bullet->isPlayer = tank->isPlayer;
+      bullet->hit = false;
     }
-    if (game.shotCoolDown > 0) {
-      --game.shotCoolDown;
+    if (tank->cool > 0) {
+      --tank->cool;
     }
     for (RegIterator it = RegBegin(regBullet); it != RegEnd(regBullet); it = RegNext(it)) {
       Bullet *bullet = RegEntry(regBullet, it);
@@ -243,58 +229,38 @@ void GameUpdate(void) {
       switch (bullet->dir) {
           case eDirOP: // 上
               newPos = Add(bullet->pos, (Vec){0, 1});
-              if (map.flags[Idx(newPos)] == eFlagNone) {
-                  // printf("%d",newPos.y);
-                  bullet->pos = newPos;
-              }
-              else if (map.flags[Idx(newPos)] == eFlagWall) {
-                map.flags[Idx(newPos)] = eFlagNone;
-                // printf("%d",newPos.y);
-                RegDelete(bullet);
-              } 
-              else {
-                // printf("%d",newPos.y);
-                RegDelete(bullet); // 遇到非空标志位删除炮弹
-              }
               break;
           case eDirPO: // 右
               newPos = Add(bullet->pos, (Vec){1, 0});
-              if (map.flags[Idx(newPos)] == eFlagNone) {
-                bullet->pos = newPos;
-              } 
-              // if (map.flags[Idx(newPos)] == eFlagWall) {
-              //   RegDelete(bullet);
-              // } 
-              else {
-                RegDelete(bullet);
-              }
               break;
           case eDirON: // 下
               newPos = Add(bullet->pos, (Vec){0, -1});
-              if (map.flags[Idx(newPos)] == eFlagNone) {
-                bullet->pos = newPos;
-              } 
-              // if (map.flags[Idx(newPos)] == eFlagWall) {
-              //   RegDelete(bullet);
-              // } 
-              else {
-                RegDelete(bullet);
-              }
               break;
           case eDirNO: // 左
               newPos = Add(bullet->pos, (Vec){-1, 0});
-              if (map.flags[Idx(newPos)] == eFlagNone) {
-                bullet->pos = newPos;
-              } 
-              // if (map.flags[Idx(newPos)] == eFlagWall) {
-              //   RegDelete(bullet);
-              // } 
-              else {
-                RegDelete(bullet);
-              }
               break;
           default:
               break;
+
+      }
+      if (bullet->hit == true) {
+        // printf("1 %d",newPos.y);
+        RegDelete(bullet);
+      }
+      else if (map.flags[Idx(newPos)] == eFlagNone) {
+        // printf("1 %d",newPos.y);
+        bullet->pos = newPos;
+      }
+      else if (map.flags[Idx(newPos)] == eFlagWall) {
+        // printf("2 %d",newPos.y);
+        map.flags[Idx(newPos)] = eFlagNone;
+        bullet->pos = newPos;
+        bullet->hit = true;
+        // printf("2 %d",bullet->hit == true?1:0);
+      } 
+      else {
+        // printf("%d",newPos.y);
+        RegDelete(bullet); // 遇到非空标志位删除炮弹
       }
     }
   }

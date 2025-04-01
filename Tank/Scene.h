@@ -56,6 +56,7 @@ typedef struct {
   Dir dir;       // Direction.
   Color color;   // Color of the tank and its bullets.
   bool isPlayer; // Whether this tank is player or enemy.
+  int cool;
 } Tank;
 
 /// \example It is easy to create or delete a `Bullet` with the help of registries, see `Registry.h`.
@@ -71,6 +72,8 @@ typedef struct {
   Dir dir;       // Direction.
   Color color;   // Color.
   bool isPlayer; // Whether this bullet was shot by player or enemy.
+  bool hit;
+
 } Bullet;
 
 typedef struct {
