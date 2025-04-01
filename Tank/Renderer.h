@@ -89,7 +89,7 @@ void RdrClear(void) {
 }
 
 /// \brief Render all the objects in the scene to the frame.
-void RdrRender(int Direction) {
+void RdrRender() {
   // Render tanks.
   for (RegIterator it = RegBegin(regTank); it != RegEnd(regTank); it = RegNext(it)) {
     Tank *tank = RegEntry(regTank, it);
@@ -99,7 +99,7 @@ void RdrRender(int Direction) {
     // TODO: You may need to delete or add codes here.
     
 
-    if (Direction == 0){
+    if (tank->dir == eDirOP){
       RdrPutChar(Add(pos, (Vec){-1, -1}), '@', color);
       RdrPutChar(Add(pos, (Vec){-1, 0}), '@', color);
       RdrPutChar(Add(pos, (Vec){-1, 1}), '@', color);
@@ -110,7 +110,7 @@ void RdrRender(int Direction) {
       RdrPutChar(Add(pos, (Vec){1, 0}), '@', color);
       RdrPutChar(Add(pos, (Vec){1, 1}), '@', color);
     }
-    else if (Direction == 1){
+    else if (tank->dir == eDirPO){
       RdrPutChar(Add(pos, (Vec){-1, -1}), '@', color);
       RdrPutChar(Add(pos, (Vec){-1, 0}), 'X', color);
       RdrPutChar(Add(pos, (Vec){-1, 1}), '@', color);
@@ -121,7 +121,7 @@ void RdrRender(int Direction) {
       RdrPutChar(Add(pos, (Vec){1, 0}), '-', color);
       RdrPutChar(Add(pos, (Vec){1, 1}), '@', color);
     }
-    else if (Direction == 2){
+    else if (tank->dir == eDirON){
       RdrPutChar(Add(pos, (Vec){-1, -1}), '@', color);
       RdrPutChar(Add(pos, (Vec){-1, 0}), '@', color);
       RdrPutChar(Add(pos, (Vec){-1, 1}), '@', color);
@@ -132,7 +132,7 @@ void RdrRender(int Direction) {
       RdrPutChar(Add(pos, (Vec){1, 0}), '@', color);
       RdrPutChar(Add(pos, (Vec){1, 1}), '@', color);
     }
-    else if (Direction == 3){
+    else if (tank->dir == eDirNO){
       RdrPutChar(Add(pos, (Vec){-1, -1}), '@', color);
       RdrPutChar(Add(pos, (Vec){-1, 0}), '-', color);
       RdrPutChar(Add(pos, (Vec){-1, 1}), '@', color);

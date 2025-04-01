@@ -17,17 +17,17 @@
 
 /// \brief Enums of the 2D directions.
 typedef enum {
-  eDirNN, // Left-down.
+  // eDirNN, // Left-down.
   eDirON, // Down.
-  eDirPN, // Right-down.
+  // eDirPN, // Right-down.
 
   eDirNO, // Left.
-  eDirOO, // Center.
+  // eDirOO, // Center.
   eDirPO, // Right.
 
-  eDirNP, // Left-up.
+  // eDirNP, // Left-up.
   eDirOP, // Up.
-  eDirPP, // Right-up.
+  // eDirPP, // Right-up.
 
   eDirInvalid, // Invalid.
 } Dir;
@@ -56,7 +56,8 @@ typedef struct {
   Dir dir;       // Direction.
   Color color;   // Color of the tank and its bullets.
   bool isPlayer; // Whether this tank is player or enemy.
-  int cool;
+  int bullet_cool;
+  int move_cool;
 } Tank;
 
 /// \example It is easy to create or delete a `Bullet` with the help of registries, see `Registry.h`.

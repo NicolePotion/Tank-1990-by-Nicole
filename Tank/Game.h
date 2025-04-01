@@ -58,14 +58,7 @@ void GameInit(void) {
   map.flags = (Flag *)malloc(sizeof(Flag) * map.size.x * map.size.y);
   
 
-  {
-    Tank *tank = RegNew(regTank);
-    tank->pos = (Vec){2, 1};
-    tank->dir = eDirOP;
-    tank->color = TK_GREEN;
-    tank->isPlayer = true;
-    tank->cool = 0;
-  }
+
 
   for (int y = 0; y < map.size.y; ++y)
     for (int x = 0; x < map.size.x; ++x) {
@@ -77,25 +70,81 @@ void GameInit(void) {
 
       map.flags[Idx(pos)] = flag;
     }
-    
-  for (int i = 0; i < nWalls; i++){
+  // Vec pos={1,0};
+  // printf("%c",map.flags[Idx(pos)]);
 
-    int x = (rand() % (map.size.x - 4)) + 2;
-    int y = (rand() % (map.size.y - 4)) + 2;
+  {
+    Tank *tank = RegNew(regTank);
+    tank->pos = (Vec){2, 2};
+    tank->dir = eDirOP;
+    tank->color = TK_GREEN;
+    tank->isPlayer = true;
+    tank->bullet_cool = 0;
+    tank->move_cool = 0;
+  }
+  for (int i = 0; i < nEnemies; ++i) {
+    Tank *tank = RegNew(regTank);
+    // 随机生成敌方坦克位置，这里简单示例，可根据实际需求调整
+    tank->pos = RandPos(); 
+    tank->dir = (Dir)(rand() % 4); // 随机方向
+    tank->color = TK_RED; // 假设敌方坦克颜色为红色
+    tank->isPlayer = false;
+    tank->isPlayer = false;
+    tank->bullet_cool = 0;
+    tank->move_cool = 0;
+  }
+  // 添加不可摧毁的实体   
+  for (int i = 0; i < nSolids; i++){
+    int x = (rand() % (map.size.x - 4)) + 1;
+    int y = (rand() % (map.size.y - 4)) + 1;
+    bool correct = true;
     
     for(int xi = x; xi < x + 3 ; xi++){
       for(int yi = y; yi < y + 3; yi++){
         Vec pos = {xi,yi};
-        if (map.flags[Idx(pos)] == eFlagNone)
-          map.flags[Idx(pos)] = eFlagWall;
-
+        if (map.flags[Idx(pos)] != eFlagNone)
+          correct = false;
       }
-
-
+    }
+    if (correct == true){
+      for(int xi = x; xi < x + 3 ; xi++){
+        for(int yi = y; yi < y + 3; yi++){
+          Vec pos = {xi,yi};
+          if (map.flags[Idx(pos)] == eFlagNone)
+            map.flags[Idx(pos)] = eFlagSolid;
+        }
+      }
+    }
+    else{
+      i--;
+    }
+  }
+  // 添加墙   
+  for (int i = 0; i < nWalls; i++){
+    int x = (rand() % (map.size.x - 4)) + 1;
+    int y = (rand() % (map.size.y - 4)) + 1;
+    bool correct = true;
+    
+    for(int xi = x; xi < x + 3 ; xi++){
+      for(int yi = y; yi < y + 3; yi++){
+        Vec pos = {xi,yi};
+        if (map.flags[Idx(pos)] != eFlagNone)
+          correct = false;
+      }
+    }
+    if (correct == true){
+      for(int xi = x; xi < x + 3 ; xi++){
+        for(int yi = y; yi < y + 3; yi++){
+          Vec pos = {xi,yi};
+          if (map.flags[Idx(pos)] == eFlagNone)
+            map.flags[Idx(pos)] = eFlagWall;
+        }
+      }
+    }
+    else{
+      i--;
     }
     
-
-
   }
 
 
@@ -116,7 +165,7 @@ void GameInit(void) {
       Vec pos = {x, y};
       RdrPutChar(pos, map.flags[Idx(pos)], TK_AUTO_COLOR);
     }
-  RdrRender(game.TankDirection_look);
+  RdrRender();
   RdrFlush();
 }
 
@@ -146,10 +195,10 @@ void GameInput(void) {
     tank->dir = eDirNO;
     game.TankDirection_move = 3; // 左
     game.TankDirection_look = 3;
-} else if (game.keyHit == 'k' && tank->cool <= 0) {
+} else if (game.keyHit == 'k' && tank->bullet_cool <= 0) {
   // 这里假设后续会根据坦克朝向生成炮弹
   // 先设置冷却时间为15帧
-    tank->cool = 15; 
+  tank->bullet_cool = 15; 
 }
 }
 
@@ -167,52 +216,148 @@ void GameUpdate(void) {
   // TODO: You may need to delete or add codes here.
   for (RegIterator it = RegBegin(regTank); it != RegEnd(regTank); it = RegNext(it)) {
     Tank *tank = RegEntry(regTank, it);
-
-    switch (game.TankDirection_move) {
-      case 0: // 上
-          Vec pos1 = {tank->pos.x - 1,tank->pos.y + 2};
-          Vec pos2 = {tank->pos.x,tank->pos.y + 2};
-          Vec pos3 = {tank->pos.x + 1,tank->pos.y + 2};
-          if (map.flags[Idx(pos1)] == eFlagNone 
-          && map.flags[Idx(pos2)] == eFlagNone
-          && map.flags[Idx(pos3)] == eFlagNone) {
-              ++tank->pos.y;
-          }break;
-      case 1: // 右
-          Vec pos4 = {tank->pos.x + 2,tank->pos.y - 1};
-          Vec pos5 = {tank->pos.x + 2,tank->pos.y};
-          Vec pos6 = {tank->pos.x + 2,tank->pos.y + 1};
-          if (map.flags[Idx(pos4)] == eFlagNone 
-          && map.flags[Idx(pos5)] == eFlagNone
-          && map.flags[Idx(pos6)] == eFlagNone) {
-              ++tank->pos.x;
-          }break;
-      case 2: // 下
-          Vec pos7 = {tank->pos.x - 1,tank->pos.y - 2};
-          Vec pos8 = {tank->pos.x,tank->pos.y - 2};
-          Vec pos9 = {tank->pos.x + 1,tank->pos.y - 2};
-          if (map.flags[Idx(pos7)] == eFlagNone 
-          && map.flags[Idx(pos8)] == eFlagNone
-          && map.flags[Idx(pos9)] == eFlagNone) {
-              --tank->pos.y;
-          }break;
-      case 3: // 左
-          Vec pos10 = {tank->pos.x - 2,tank->pos.y - 1};
-          Vec pos11 = {tank->pos.x - 2,tank->pos.y};
-          Vec pos12 = {tank->pos.x - 2,tank->pos.y + 1};
-          if (map.flags[Idx(pos10)] == eFlagNone 
-          && map.flags[Idx(pos11)] == eFlagNone
-          && map.flags[Idx(pos12)] == eFlagNone) {
-              --tank->pos.x;
-          }break;
-      default:
-          break;
+    if (tank->isPlayer){  
+      switch (game.TankDirection_move) {
+        case 0: // 上
+            Vec pos1 = {tank->pos.x - 1,tank->pos.y + 2};
+            Vec pos2 = {tank->pos.x,tank->pos.y + 2};
+            Vec pos3 = {tank->pos.x + 1,tank->pos.y + 2};
+            if (map.flags[Idx(pos1)] == eFlagNone 
+            && map.flags[Idx(pos2)] == eFlagNone
+            && map.flags[Idx(pos3)] == eFlagNone) {
+                ++tank->pos.y;
+            }break;
+        case 1: // 右
+            Vec pos4 = {tank->pos.x + 2,tank->pos.y - 1};
+            Vec pos5 = {tank->pos.x + 2,tank->pos.y};
+            Vec pos6 = {tank->pos.x + 2,tank->pos.y + 1};
+            if (map.flags[Idx(pos4)] == eFlagNone 
+            && map.flags[Idx(pos5)] == eFlagNone
+            && map.flags[Idx(pos6)] == eFlagNone) {
+                ++tank->pos.x;
+            }break;
+        case 2: // 下
+            Vec pos7 = {tank->pos.x - 1,tank->pos.y - 2};
+            Vec pos8 = {tank->pos.x,tank->pos.y - 2};
+            Vec pos9 = {tank->pos.x + 1,tank->pos.y - 2};
+            if (map.flags[Idx(pos7)] == eFlagNone 
+            && map.flags[Idx(pos8)] == eFlagNone
+            && map.flags[Idx(pos9)] == eFlagNone) {
+                --tank->pos.y;
+            }break;
+        case 3: // 左
+            Vec pos10 = {tank->pos.x - 2,tank->pos.y - 1};
+            Vec pos11 = {tank->pos.x - 2,tank->pos.y};
+            Vec pos12 = {tank->pos.x - 2,tank->pos.y + 1};
+            if (map.flags[Idx(pos10)] == eFlagNone 
+            && map.flags[Idx(pos11)] == eFlagNone
+            && map.flags[Idx(pos12)] == eFlagNone) {
+                --tank->pos.x;
+            }break;
+        default:
+            break;
+      }
     }
+    else{
+      int change = rand() % 4;
+      if (change == 0){
+        tank->dir = (Dir)(rand() % 4);
+      }
+      
+      
+      // switch (tank->dir) {
+      //   case eDirOP: // 上
+      //       Vec pos1 = {tank->pos.x - 1,tank->pos.y + 2};
+      //       Vec pos2 = {tank->pos.x,tank->pos.y + 2};
+      //       Vec pos3 = {tank->pos.x + 1,tank->pos.y + 2};
+      //       if (map.flags[Idx(pos1)] == eFlagNone 
+      //       && map.flags[Idx(pos2)] == eFlagNone
+      //       && map.flags[Idx(pos3)] == eFlagNone) {
+      //           ++tank->pos.y;
+      //           tank->move_cool == 10;
+      //       }break;
+      //   case eDirPO: // 右
+      //       Vec pos4 = {tank->pos.x + 2,tank->pos.y - 1};
+      //       Vec pos5 = {tank->pos.x + 2,tank->pos.y};
+      //       Vec pos6 = {tank->pos.x + 2,tank->pos.y + 1};
+      //       if (map.flags[Idx(pos4)] == eFlagNone 
+      //       && map.flags[Idx(pos5)] == eFlagNone
+      //       && map.flags[Idx(pos6)] == eFlagNone) {
+      //           ++tank->pos.x;
+      //       }break;
+      //   case eDirON: // 下
+      //       Vec pos7 = {tank->pos.x - 1,tank->pos.y - 2};
+      //       Vec pos8 = {tank->pos.x,tank->pos.y - 2};
+      //       Vec pos9 = {tank->pos.x + 1,tank->pos.y - 2};
+      //       if (map.flags[Idx(pos7)] == eFlagNone 
+      //       && map.flags[Idx(pos8)] == eFlagNone
+      //       && map.flags[Idx(pos9)] == eFlagNone) {
+      //           --tank->pos.y;
+      //       }break;
+      //   case eDirNO: // 左
+      //       Vec pos10 = {tank->pos.x - 2,tank->pos.y - 1};
+      //       Vec pos11 = {tank->pos.x - 2,tank->pos.y};
+      //       Vec pos12 = {tank->pos.x - 2,tank->pos.y + 1};
+      //       if (map.flags[Idx(pos10)] == eFlagNone 
+      //       && map.flags[Idx(pos11)] == eFlagNone
+      //       && map.flags[Idx(pos12)] == eFlagNone) {
+      //           --tank->pos.x;
+      //       }break;
+      //   default:
+      //       break;
+      // }
 
+      Vec newPos;
+      Vec newPosmiddle;
+      Vec newPosleft;
+      Vec newPosright;
+      switch (tank->dir) {
+          case eDirOP: // 上
+              newPos = Add(tank->pos, (Vec){0, 1});
+              newPosmiddle = Add(tank->pos, (Vec){0, 2});
+              newPosleft = Add(tank->pos, (Vec){-1, 2});
+              newPosright = Add(tank->pos, (Vec){1, 2});
+              break;
+          case eDirPO: // 右
+              newPos = Add(tank->pos, (Vec){1, 0});
+              newPosmiddle = Add(tank->pos, (Vec){2, 0});
+              newPosleft = Add(tank->pos, (Vec){2, -1});
+              newPosright = Add(tank->pos, (Vec){2, 1});
+              break;
+          case eDirON: // 下
+              newPos = Add(tank->pos, (Vec){0, -1});
+              newPosmiddle = Add(tank->pos, (Vec){0, -2});
+              newPosleft = Add(tank->pos, (Vec){-1, -2});
+              newPosright = Add(tank->pos, (Vec){1, -2});
+              break;
+          case eDirNO: // 左
+              newPos = Add(tank->pos, (Vec){-1, 0});
+              newPosmiddle = Add(tank->pos, (Vec){-2, 0});
+              newPosleft = Add(tank->pos, (Vec){-2, -1});
+              newPosright = Add(tank->pos, (Vec){-2, 1});
+              break;
+          default:
+              break;
+      }
+      if (map.flags[Idx(newPos)] == eFlagNone
+      && map.flags[Idx(newPosleft)] == eFlagNone
+      && map.flags[Idx(newPosright)] == eFlagNone
+      && tank->move_cool <= 0) {
+        // 如果子弹下一位置是空，则移动到下一位置
+        tank->pos = newPos; 
+        tank->move_cool == 30;
+      }
     
 
 
-    if (tank->cool == 15) {
+      if (tank->move_cool > 0) {
+        --tank->move_cool;
+      }
+
+    }
+
+
+    if (tank->bullet_cool == 15) {
       Bullet *bullet = RegNew(regBullet);
       bullet->pos = tank->pos;
       bullet->dir = tank->dir;
@@ -220,9 +365,10 @@ void GameUpdate(void) {
       bullet->isPlayer = tank->isPlayer;
       bullet->hit = false;
     }
-    if (tank->cool > 0) {
-      --tank->cool;
+    if (tank->bullet_cool > 0) {
+      --tank->bullet_cool;
     }
+    
     for (RegIterator it = RegBegin(regBullet); it != RegEnd(regBullet); it = RegNext(it)) {
       Bullet *bullet = RegEntry(regBullet, it);
       Vec newPos;
@@ -241,25 +387,22 @@ void GameUpdate(void) {
               break;
           default:
               break;
-
       }
       if (bullet->hit == true) {
-        // printf("1 %d",newPos.y);
-        RegDelete(bullet);
+        // 如果子弹已经完成击打，则删掉这颗子弹
+        RegDelete(bullet); 
       }
       else if (map.flags[Idx(newPos)] == eFlagNone) {
-        // printf("1 %d",newPos.y);
-        bullet->pos = newPos;
+        // 如果子弹下一位置是空，则移动到下一位置
+        bullet->pos = newPos; 
       }
       else if (map.flags[Idx(newPos)] == eFlagWall) {
-        // printf("2 %d",newPos.y);
-        map.flags[Idx(newPos)] = eFlagNone;
+        // 如果子弹下一位置是墙，则改变墙成为空，并移动到下一位置，从而完成刷新，然后给子弹的hit参数改为true
+        map.flags[Idx(newPos)] = eFlagNone; 
         bullet->pos = newPos;
         bullet->hit = true;
-        // printf("2 %d",bullet->hit == true?1:0);
       } 
       else {
-        // printf("%d",newPos.y);
         RegDelete(bullet); // 遇到非空标志位删除炮弹
       }
     }
@@ -267,7 +410,7 @@ void GameUpdate(void) {
   
   
 
-  RdrRender(game.TankDirection_look);
+  RdrRender();
   RdrFlush();
   game.TankDirection_move = -1;
 }
