@@ -22,6 +22,7 @@ typedef struct {
   int nEnemies; // Number of enemy tanks.
   int nSolids;  // Number of solids.
   int nWalls;   // Number of walls.
+  int EnemyPower; // How fast the enemy shoot.
 } Config;
 
 // The config singleton.

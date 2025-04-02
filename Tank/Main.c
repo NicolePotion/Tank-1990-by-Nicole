@@ -24,9 +24,12 @@ int main(void) {
   // Configure the game.
   config.fps = 30;
   config.mapSize = (Vec){40, 20};
-  config.nEnemies = 2;
+  config.nEnemies = 1;
   config.nSolids = 2;
   config.nWalls = 3;
+
+  // Other parameter.
+  config.EnemyPower = 5;   // 0-10  - No shooting when 0;Strongest shooting when 10.
 
   // Run the game.
   GameLifecycle();

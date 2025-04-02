@@ -74,16 +74,18 @@ void RdrClear(void) {
     Tank *tank = RegEntry(regTank, it);
     Vec pos = tank->pos;
 
-    for (int y = -1; y <= 1; ++y)
-      for (int x = -1; x <= 1; ++x)
+    for (int y = -1; y <= 1; ++y){
+      for (int x = -1; x <= 1; ++x){
+        map.flags[Idx(pos)] = eFlagNone;
         RdrPutChar(Add(pos, (Vec){x, y}), map.flags[Idx(pos)], TK_AUTO_COLOR);
+      }
+    }
   }
 
   // Clear bullets.
   for (RegIterator it = RegBegin(regBullet); it != RegEnd(regBullet); it = RegNext(it)) {
     Bullet *bullet = RegEntry(regBullet, it);
     Vec pos = bullet->pos;
-
     RdrPutChar(pos, map.flags[Idx(pos)], TK_AUTO_COLOR);
   }
 }
@@ -91,6 +93,7 @@ void RdrClear(void) {
 /// \brief Render all the objects in the scene to the frame.
 void RdrRender() {
   // Render tanks.
+  
   for (RegIterator it = RegBegin(regTank); it != RegEnd(regTank); it = RegNext(it)) {
     Tank *tank = RegEntry(regTank, it);
     Vec pos = tank->pos;
@@ -98,58 +101,11 @@ void RdrRender() {
 
     // TODO: You may need to delete or add codes here.
     
-
-    if (tank->dir == eDirOP){
-      RdrPutChar(Add(pos, (Vec){-1, -1}), '@', color);
-      RdrPutChar(Add(pos, (Vec){-1, 0}), '@', color);
-      RdrPutChar(Add(pos, (Vec){-1, 1}), '@', color);
-      RdrPutChar(Add(pos, (Vec){0, -1}), 'X', color);
-      RdrPutChar(Add(pos, (Vec){0, 0}), 'O', color);
-      RdrPutChar(Add(pos, (Vec){0, 1}), '|', color);
-      RdrPutChar(Add(pos, (Vec){1, -1}), '@', color);
-      RdrPutChar(Add(pos, (Vec){1, 0}), '@', color);
-      RdrPutChar(Add(pos, (Vec){1, 1}), '@', color);
-    }
-    else if (tank->dir == eDirPO){
-      RdrPutChar(Add(pos, (Vec){-1, -1}), '@', color);
-      RdrPutChar(Add(pos, (Vec){-1, 0}), 'X', color);
-      RdrPutChar(Add(pos, (Vec){-1, 1}), '@', color);
-      RdrPutChar(Add(pos, (Vec){0, -1}), '@', color);
-      RdrPutChar(Add(pos, (Vec){0, 0}), 'O', color);
-      RdrPutChar(Add(pos, (Vec){0, 1}), '@', color);
-      RdrPutChar(Add(pos, (Vec){1, -1}), '@', color);
-      RdrPutChar(Add(pos, (Vec){1, 0}), '-', color);
-      RdrPutChar(Add(pos, (Vec){1, 1}), '@', color);
-    }
-    else if (tank->dir == eDirON){
-      RdrPutChar(Add(pos, (Vec){-1, -1}), '@', color);
-      RdrPutChar(Add(pos, (Vec){-1, 0}), '@', color);
-      RdrPutChar(Add(pos, (Vec){-1, 1}), '@', color);
-      RdrPutChar(Add(pos, (Vec){0, -1}), '|', color);
-      RdrPutChar(Add(pos, (Vec){0, 0}), 'O', color);
-      RdrPutChar(Add(pos, (Vec){0, 1}), 'X', color);
-      RdrPutChar(Add(pos, (Vec){1, -1}), '@', color);
-      RdrPutChar(Add(pos, (Vec){1, 0}), '@', color);
-      RdrPutChar(Add(pos, (Vec){1, 1}), '@', color);
-    }
-    else if (tank->dir == eDirNO){
-      RdrPutChar(Add(pos, (Vec){-1, -1}), '@', color);
-      RdrPutChar(Add(pos, (Vec){-1, 0}), '-', color);
-      RdrPutChar(Add(pos, (Vec){-1, 1}), '@', color);
-      RdrPutChar(Add(pos, (Vec){0, -1}), '@', color);
-      RdrPutChar(Add(pos, (Vec){0, 0}), 'O', color);
-      RdrPutChar(Add(pos, (Vec){0, 1}), '@', color);
-      RdrPutChar(Add(pos, (Vec){1, -1}), '@', color);
-      RdrPutChar(Add(pos, (Vec){1, 0}), 'X', color);
-      RdrPutChar(Add(pos, (Vec){1, 1}), '@', color);
-    }
-    else{
-      for (int y = -1; y <= 1; ++y)
-      for (int x = -1; x <= 1; ++x)
-        RdrPutChar(Add(pos, (Vec){x, y}), 'O', color);
-
-
-
+    for (int y = -1; y <= 1; ++y){
+      for (int x = -1; x <= 1; ++x){
+        map.flags[Idx(pos)] = eFlagTank;
+        RdrPutChar(Add(pos, (Vec){x, y}), Tanklook[tank->dir][1-y][x+1], color);
+      }
     }
   }
 
