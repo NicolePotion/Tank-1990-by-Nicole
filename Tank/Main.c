@@ -23,8 +23,8 @@ int main(void) {
 
   // Configure the game.
   config.fps = 30;
-  config.mapSize = (Vec){40, 20};
-  config.nEnemies = 1;
+  config.mapSize = (Vec){70, 20};
+  config.nEnemies = 4;
   config.nSolids = 2;
   config.nWalls = 3;
 

@@ -58,8 +58,11 @@ void RdrPutChar(Vec pos, char c, Color color) {
             : flag == eFlagSolid ? TK_BLUE
             : flag == eFlagWall  ? TK_WHITE
 
-            : flag == eFlagTank ? TK_INVALID_COLOR
-                                : TK_INVALID_COLOR;
+            // : flag == eFlagTank ? TK_INVALID_COLOR
+            //                     : TK_INVALID_COLOR;
+
+            : flag == eFlagTank ? TK_YELLOW
+                                : TK_RED;
   }
   renderer.colors[Idx(pos)] = color;
 }
@@ -76,7 +79,6 @@ void RdrClear(void) {
 
     for (int y = -1; y <= 1; ++y){
       for (int x = -1; x <= 1; ++x){
-        map.flags[Idx(pos)] = eFlagNone;
         RdrPutChar(Add(pos, (Vec){x, y}), map.flags[Idx(pos)], TK_AUTO_COLOR);
       }
     }
@@ -103,7 +105,6 @@ void RdrRender() {
     
     for (int y = -1; y <= 1; ++y){
       for (int x = -1; x <= 1; ++x){
-        map.flags[Idx(pos)] = eFlagTank;
         RdrPutChar(Add(pos, (Vec){x, y}), Tanklook[tank->dir][1-y][x+1], color);
       }
     }

@@ -256,13 +256,35 @@ void GameUpdate(void) {
     // If nothing hold the tank back,then it go forward in its direction.
     if (map.flags[Idx(newPosmiddle)] == eFlagNone && map.flags[Idx(newPosleft)] == eFlagNone 
     && map.flags[Idx(newPosright)] == eFlagNone && tank->isOperate && tank->isPlayer) {
+      for (int y = -1; y <= 1; ++y){
+        for (int x = -1; x <= 1; ++x){
+          map.flags[Idx(Add(tank->pos, (Vec){x, y}))] = eFlagNone;
+        }
+      }
+      RdrClear();
       tank->pos = newPos; 
       tank->isOperate = false;
+      for (int y = -1; y <= 1; ++y){
+        for (int x = -1; x <= 1; ++x){
+          map.flags[Idx(Add(tank->pos, (Vec){x, y}))] = eFlagTank;
+        }
+      }
     }
     if (map.flags[Idx(newPosmiddle)] == eFlagNone && map.flags[Idx(newPosleft)] == eFlagNone 
     && map.flags[Idx(newPosright)] == eFlagNone && tank->move_cool <= 0 && !tank->isPlayer) {
+      for (int y = -1; y <= 1; ++y){
+        for (int x = -1; x <= 1; ++x){
+          map.flags[Idx(Add(tank->pos, (Vec){x, y}))] = eFlagNone;
+        }
+      }
+      RdrClear();
       tank->pos = newPos; 
       tank->move_cool = 20;
+      for (int y = -1; y <= 1; ++y){
+        for (int x = -1; x <= 1; ++x){
+          map.flags[Idx(Add(tank->pos, (Vec){x, y}))] = eFlagTank;
+        }
+      }
     }
     
     // In every circle, the cooling time of tank moving decrease with the sentence below.
@@ -325,7 +347,7 @@ void GameUpdate(void) {
     }
 
     // Otherwise,if the newPos is eFlagNone,update the bullet to the new position.
-    else if (map.flags[Idx(newPos)] == eFlagNone) {
+    else if (map.flags[Idx(newPos)] == eFlagNone  ||  map.flags[Idx(newPos)] == eFlagTank) {
       bullet->pos = newPos; 
     }
 
