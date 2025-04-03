@@ -59,6 +59,7 @@ typedef struct {
   bool isOperate;
   int bullet_cool;
   int move_cool;
+  int id;
 } Tank;
 
 char Tanklook[4][3][3] = {
@@ -92,6 +93,7 @@ typedef struct {
   Color color;   // Color.
   bool isPlayer; // Whether this bullet was shot by player or enemy.
   bool hit;
+  int id;
 
 } Bullet;
 
@@ -143,5 +145,8 @@ void MoveCursor(Vec pos) {
 
 /// \brief Randomly generate a position in map.
 Vec RandPos(void) {
-  return RandVec(map.size);
+  // Avoiding the overslapping of the tank and the margin.
+  Vec margin_out = (Vec){map.size.x-2,map.size.y-2};
+  Vec pos = RandVec(margin_out);
+  return (Vec){pos.x + 2,pos.y + 2};
 }

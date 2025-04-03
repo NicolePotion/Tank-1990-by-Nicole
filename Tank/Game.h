@@ -6,7 +6,6 @@
 /// `GameInit`, `GameInput`, `GameUpdate`, `GameTerminate`, and
 /// the most important: `GameLifecycle`.
 /// Please read the corresponding comments to understand their relationships.
-
 //
 //
 //
@@ -19,15 +18,105 @@
 
 typedef struct {
   char keyHit; // The keyboard key hit by the player at this frame.
-  int  TankDirection;
+  bool alive;
+  // int  TankDirection;
 } Game;
 
 // The game singleton.
 static Game game;
 
+
 // The keyboard key "ESC".
 static const char keyESC = '\033';
 
+
+// Write some function!!----To help make the things easy.--x
+// Input the pos, and the function will tell you whether a tank is standing at the position,if it does,tank->id will be returned.
+int Tankcheck(Vec pos){
+  for (RegIterator it = RegBegin(regTank); it != RegEnd(regTank); it = RegNext(it)) {
+    Tank *tank = RegEntry(regTank, it);
+    if(-1 <= Sub(pos,tank->pos).x && Sub(pos,tank->pos).x <= 1 
+    && -1 <= Sub(pos,tank->pos).y && Sub(pos,tank->pos).y <= 1 ){
+      return tank->id;
+    }
+  }
+  return -1; // -1 will be returned if there is no tank.
+}
+
+// Deleting the specific id tank.
+void RegDelete_tankid(int id){
+  for (RegIterator it = RegBegin(regTank); it != RegEnd(regTank); it = RegNext(it)) {
+    Tank *tank = RegEntry(regTank, it);
+    if(tank->id == id){
+      RegDelete(tank);
+    }
+  }
+}
+
+
+// Create 3*3 something.
+void Creating3by3(int num, char object){
+  for (int i = 0; i < num; i++){
+    int x = (rand() % (map.size.x - 4)) + 1;
+    int y = (rand() % (map.size.y - 4)) + 1;
+    bool correct = true;
+    
+    for(int xi = x; xi < x + 3 ; xi++){
+      for(int yi = y; yi < y + 3; yi++){
+        Vec pos = {xi,yi};
+        if (map.flags[Idx(pos)] != eFlagNone || Tankcheck(pos) != -1)
+          correct = false;
+      }
+    }
+
+    if (correct == true){
+      for(int xi = x; xi < x + 3 ; xi++){
+        for(int yi = y; yi < y + 3; yi++){
+          Vec pos = {xi,yi};
+          map.flags[Idx(pos)] = object;
+        }
+      }
+    }
+    else{
+      i--;
+    }
+  }
+}
+
+void GameEnd(void){
+  char* Dead1 = "You are shooted!";
+  char* Dead2 = "Game over";
+  char* Dead3 = "Press anything to exit";
+  int len = strlen(Dead3);
+  int startposy = (map.size.y-3)/2;
+  int startposx = (map.size.x - len)/2;
+  Vec pos;
+
+  for (int y = startposy - 1; y < startposy + 4; ++y)
+    for (int x = startposx - 2; x < startposx + len + 2; ++x) {
+      Vec pos = {x, y};
+      if (Tankcheck(pos) >= 0){
+        RegDelete_tankid(Tankcheck(pos));
+      }
+      Flag flag;
+      if (x == startposx - 2 || y == startposy - 1 || x == startposx + len + 1 || y == startposy + 3){
+        flag = eFlagSolid;
+        map.flags[Idx(pos)] = flag;
+        // RdrPutChar(pos, map.flags[Idx(pos)], TK_AUTO_COLOR);
+      }
+      else{
+        flag = eFlagNone;
+        map.flags[Idx(pos)] = flag;
+        RdrPutChar(pos, map.flags[Idx(pos)], TK_AUTO_COLOR);
+      }
+    }
+
+  RdrPutString(startposy+2,Dead1, TK_NORMAL);
+  RdrPutString(startposy+1, Dead2, TK_NORMAL);
+  RdrPutString(startposy, Dead3, TK_RED);
+  game.alive = false;
+
+}
 //
 //
 //
@@ -50,15 +139,14 @@ void GameInit(void) {
   int nSolids = config.nSolids;
   int nWalls = config.nWalls;
 
+
   // Initialize scene.
   RegInit(regTank);
   RegInit(regBullet);
-
   map.flags = (Flag *)malloc(sizeof(Flag) * map.size.x * map.size.y);
+  game.alive = true;
   
-
-
-
+  // Step1: Create the margin.(Alrady written)
   for (int y = 0; y < map.size.y; ++y)
     for (int x = 0; x < map.size.x; ++x) {
       Vec pos = {x, y};
@@ -69,87 +157,55 @@ void GameInit(void) {
 
       map.flags[Idx(pos)] = flag;
     }
-  // Vec pos={1,0};
-  // printf("%c",map.flags[Idx(pos)]);
 
+  // Step2: Create player's tank.(Totally already written)
   {
     Tank *tank = RegNew(regTank);
     tank->pos = (Vec){2, 2};
     tank->dir = eDirOP;
     tank->color = TK_GREEN;
-    tank->isPlayer = true;
+    // tank->isPlayer = true;
     tank->bullet_cool = 0;
     tank->move_cool = 0;
     tank->isOperate = false;
+    tank->id = 0;
   }
+
+  // Step3: Create AI tank. (Do similar things as player's tank.)
   for (int i = 0; i < nEnemies; ++i) {
-    Tank *tank = RegNew(regTank);
-    // 随机生成敌方坦克位置，这里简单示例，可根据实际需求调整
-    tank->pos = RandPos(); 
-    tank->dir = (Dir)(rand() % 4); // 随机方向
-    tank->color = TK_RED; // 假设敌方坦克颜色为红色
-    tank->isPlayer = false;
-    tank->isPlayer = false;
-    tank->bullet_cool = 0;
-    tank->move_cool = 0;
-    tank->isOperate = true;
-    
-  }
-  // 添加不可摧毁的实体   
-  for (int i = 0; i < nSolids; i++){
-    int x = (rand() % (map.size.x - 4)) + 1;
-    int y = (rand() % (map.size.y - 4)) + 1;
+    Vec pos = RandPos();
     bool correct = true;
-    
-    for(int xi = x; xi < x + 3 ; xi++){
-      for(int yi = y; yi < y + 3; yi++){
+    for(int xi = pos.x; xi < pos.x + 3 ; xi++){
+      for(int yi = pos.y; yi < pos.y + 3; yi++){
         Vec pos = {xi,yi};
-        if (map.flags[Idx(pos)] != eFlagNone)
+        if (map.flags[Idx(pos)] != eFlagNone || Tankcheck(pos) != -1)
           correct = false;
       }
     }
     if (correct == true){
-      for(int xi = x; xi < x + 3 ; xi++){
-        for(int yi = y; yi < y + 3; yi++){
-          Vec pos = {xi,yi};
-          if (map.flags[Idx(pos)] == eFlagNone)
-            map.flags[Idx(pos)] = eFlagSolid;
-        }
-      }
+      Tank *tank = RegNew(regTank);
+      tank->pos = pos; 
+      tank->dir = (Dir)(Rand(4));
+      tank->color = TK_RED; 
+      // tank->isPlayer = false;
+      tank->bullet_cool = 0;
+      tank->move_cool = 0;
+      tank->isOperate = true;
+      tank->id = i+1;
     }
     else{
       i--;
     }
-  }
-  // 添加墙   
-  for (int i = 0; i < nWalls; i++){
-    int x = (rand() % (map.size.x - 4)) + 1;
-    int y = (rand() % (map.size.y - 4)) + 1;
-    bool correct = true;
-    
-    for(int xi = x; xi < x + 3 ; xi++){
-      for(int yi = y; yi < y + 3; yi++){
-        Vec pos = {xi,yi};
-        if (map.flags[Idx(pos)] != eFlagNone)
-          correct = false;
-      }
-    }
-    if (correct == true){
-      for(int xi = x; xi < x + 3 ; xi++){
-        for(int yi = y; yi < y + 3; yi++){
-          Vec pos = {xi,yi};
-          if (map.flags[Idx(pos)] == eFlagNone)
-            map.flags[Idx(pos)] = eFlagWall;
-        }
-      }
-    }
-    else{
-      i--;
-    }
-    
+
   }
 
-
+ // Step4: Create %%%*3lines , a kind of magic solid.
+  Creating3by3(nSolids,eFlagSolid);
+  
+ // Step5: Create ###*3lines , a kind of beautiful wall.  
+  Creating3by3(nWalls,eFlagWall);
+  
+  
   // Initialize renderer.
   renderer.csPrev = (char *)malloc(sizeof(char) * map.size.x * map.size.y);
   renderer.colorsPrev = (Color *)malloc(sizeof(Color) * map.size.x * map.size.y);
@@ -181,29 +237,35 @@ void GameInput(void) {
   game.keyHit = kbhit_t() ? (char)getch_t() : '\0';
   RegIterator it = RegBegin(regTank);
   Tank *tank = RegEntry(regTank, it);
-  
-  if (game.keyHit == 'w') {
-    tank->dir = eDirOP;
-    tank->isOperate = true;
-} else if (game.keyHit == 'd') {
-    tank->dir = eDirPO;
-    tank->isOperate = true;
-} else if (game.keyHit =='s') {
-    tank->dir = eDirON;
-    tank->isOperate = true;
-} else if (game.keyHit == 'a') {
-    tank->dir = eDirNO;
-    tank->isOperate = true;
-} else if (game.keyHit == 'k' && tank->bullet_cool <= 0) {
-  // 这里假设后续会根据坦克朝向生成炮弹
-  // 先设置冷却时间为15帧
-  tank->bullet_cool = 15; 
-}
+  if (game.alive == true){
+    if (game.keyHit == 'w') {
+      tank->dir = eDirOP;
+      tank->isOperate = true;
+    } 
+    else if (game.keyHit == 'd') {
+      tank->dir = eDirPO;
+      tank->isOperate = true;
+    } 
+    else if (game.keyHit =='s') {
+      tank->dir = eDirON;
+      tank->isOperate = true;
+    } 
+    else if (game.keyHit == 'a') {
+      tank->dir = eDirNO;
+      tank->isOperate = true;
+    } 
+    else if (game.keyHit == 'k' && tank->bullet_cool <= 0) {
+    tank->bullet_cool = 15; 
+    }
+  }
+  else{
+    if (game.keyHit) {
+      exit(0);
+    }
+  }
 }
 
-//
-//
-//
+
 /// \brief Perform all tasks required for a frame update, including:
 /// 1. Game logics of `Tank`s, `Bullet`s, etc.
 /// 2. Rerendering all objects in the scene.
@@ -216,10 +278,10 @@ void GameUpdate(void) {
   // Tranverse all the tanks,update there direction and position.
   for (RegIterator it = RegBegin(regTank); it != RegEnd(regTank); it = RegNext(it)) {
     Tank *tank = RegEntry(regTank, it);
-    if (!tank->isPlayer){
+    if (tank->id > 0){
       int change = rand() % 4;
       if (change == 0 && tank->move_cool <= 0){
-        tank->dir = (Dir)(rand() % 4);
+        tank->dir = (Dir)(Rand(4));
       }
     }
 
@@ -254,37 +316,20 @@ void GameUpdate(void) {
     }
 
     // If nothing hold the tank back,then it go forward in its direction.
+    // Player's tank:
     if (map.flags[Idx(newPosmiddle)] == eFlagNone && map.flags[Idx(newPosleft)] == eFlagNone 
-    && map.flags[Idx(newPosright)] == eFlagNone && tank->isOperate && tank->isPlayer) {
-      for (int y = -1; y <= 1; ++y){
-        for (int x = -1; x <= 1; ++x){
-          map.flags[Idx(Add(tank->pos, (Vec){x, y}))] = eFlagNone;
-        }
-      }
-      RdrClear();
+    && map.flags[Idx(newPosright)] == eFlagNone && tank->isOperate && tank->id == 0 
+    && Tankcheck(newPosmiddle) == -1 && Tankcheck(newPosleft) == -1 && Tankcheck(newPosright) == -1) {
       tank->pos = newPos; 
       tank->isOperate = false;
-      for (int y = -1; y <= 1; ++y){
-        for (int x = -1; x <= 1; ++x){
-          map.flags[Idx(Add(tank->pos, (Vec){x, y}))] = eFlagTank;
-        }
-      }
     }
+
+    // AI tank:
     if (map.flags[Idx(newPosmiddle)] == eFlagNone && map.flags[Idx(newPosleft)] == eFlagNone 
-    && map.flags[Idx(newPosright)] == eFlagNone && tank->move_cool <= 0 && !tank->isPlayer) {
-      for (int y = -1; y <= 1; ++y){
-        for (int x = -1; x <= 1; ++x){
-          map.flags[Idx(Add(tank->pos, (Vec){x, y}))] = eFlagNone;
-        }
-      }
-      RdrClear();
+    && map.flags[Idx(newPosright)] == eFlagNone && tank->move_cool <= 0 && tank->id > 0
+    && Tankcheck(newPosmiddle) == -1 && Tankcheck(newPosleft) == -1 && Tankcheck(newPosright) == -1) {
       tank->pos = newPos; 
       tank->move_cool = 20;
-      for (int y = -1; y <= 1; ++y){
-        for (int x = -1; x <= 1; ++x){
-          map.flags[Idx(Add(tank->pos, (Vec){x, y}))] = eFlagTank;
-        }
-      }
     }
     
     // In every circle, the cooling time of tank moving decrease with the sentence below.
@@ -293,25 +338,27 @@ void GameUpdate(void) {
     }
 
     // If the player tank press K,the bullet inited.
-    if (tank->bullet_cool == 15 && tank->isPlayer) {
+    if (tank->bullet_cool == 15 && tank->id == 0) {
       Bullet *bullet = RegNew(regBullet);
       bullet->pos = tank->pos;
       bullet->dir = tank->dir;
       bullet->color = tank->color;
-      bullet->isPlayer = tank->isPlayer;
+      // bullet->isPlayer = tank->isPlayer;
       bullet->hit = false;
+      bullet->id = tank->id;
     }
 
     // The AI tank will shoot with a 0.1 possibility, and the init of the bullet write below.
-    int shoot = config.EnemyPower == 0 ? 1 : rand() % ( 100 / config.EnemyPower);
-    if (!tank->isPlayer && shoot == 0 && tank->bullet_cool <= 0) {
+    int shoot = config.EnemyPower == 0 ? 1 : Rand( 100 / config.EnemyPower);
+    if (tank->id > 0 && shoot == 0 && tank->bullet_cool <= 0) {
       Bullet *bullet = RegNew(regBullet);
       bullet->pos = tank->pos;
       bullet->dir = tank->dir;
       bullet->color = tank->color;
-      bullet->isPlayer = !tank->isPlayer;
+      // bullet->isPlayer = !tank->isPlayer;
       bullet->hit = false;
       tank->bullet_cool = 15; 
+      bullet->id = tank->id;
     }
 
     // In every circle, the cooling time of bullets decrease with the sentence below.
@@ -345,9 +392,19 @@ void GameUpdate(void) {
     if (bullet->hit == true) {
       RegDelete(bullet); 
     }
+    
+    else if (bullet->id == 0 && Tankcheck(newPos) > 0){
+      RegDelete_tankid(Tankcheck(newPos));
+      bullet->hit = true;
+    }
+
+    else if (bullet->id > 0 && Tankcheck(newPos) == 0){
+      GameEnd();
+      bullet->hit = true;
+    }
 
     // Otherwise,if the newPos is eFlagNone,update the bullet to the new position.
-    else if (map.flags[Idx(newPos)] == eFlagNone  ||  map.flags[Idx(newPos)] == eFlagTank) {
+    else if (map.flags[Idx(newPos)] == eFlagNone) {
       bullet->pos = newPos; 
     }
 
@@ -358,6 +415,7 @@ void GameUpdate(void) {
       bullet->pos = newPos;
       bullet->hit = true;
     } 
+
 
     // Otherwise,delete the bullet for it may encounter something can't pass through.
     else {

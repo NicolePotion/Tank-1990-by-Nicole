@@ -9,7 +9,8 @@
 //
 //
 //
-#include "Scene.h"
+# include "Scene.h"
+# include <string.h>
 
 /// \brief Let the renderer automatically deduce the color.
 #define TK_AUTO_COLOR ((const char *)(NULL))
@@ -58,13 +59,25 @@ void RdrPutChar(Vec pos, char c, Color color) {
             : flag == eFlagSolid ? TK_BLUE
             : flag == eFlagWall  ? TK_WHITE
 
-            // : flag == eFlagTank ? TK_INVALID_COLOR
-            //                     : TK_INVALID_COLOR;
+            : flag == eFlagTank ? TK_INVALID_COLOR
+                                : TK_INVALID_COLOR;
 
-            : flag == eFlagTank ? TK_YELLOW
-                                : TK_RED;
   }
   renderer.colors[Idx(pos)] = color;
+}
+
+void RdrPutString(int line, char* c, Color color) {
+  int len = strlen(c);
+  int startposx = (map.size.x - len)/2;
+  Vec pos;
+  for(int i = startposx; i < startposx + len; i++){
+    pos = (Vec){i,line};
+    renderer.cs[Idx(pos)] = *c;
+    renderer.colors[Idx(pos)] = color;
+
+    c++;
+  }
+  
 }
 
 //
@@ -72,6 +85,7 @@ void RdrPutChar(Vec pos, char c, Color color) {
 //
 /// \brief Clear all the objects in the scene from the frame.
 void RdrClear(void) {
+  
   // Clear tanks.
   for (RegIterator it = RegBegin(regTank); it != RegEnd(regTank); it = RegNext(it)) {
     Tank *tank = RegEntry(regTank, it);
