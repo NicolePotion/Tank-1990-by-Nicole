@@ -20,6 +20,7 @@ typedef struct {
   char keyHit; // The keyboard key hit by the player at this frame.
   bool alive;
   int state;
+  bool Bloodprint;
   // int  TankDirection;
 } Game;
 
@@ -53,6 +54,8 @@ void RegDelete_tankid(int id){
     }
   }
 }
+
+
 
 // Count the number of the tank.
 int Tankcount(void){
@@ -160,6 +163,23 @@ void GameEndDead(void){
   RdrPutString(startposy, Dead3, TK_RED);
   game.alive = false;
 }
+
+void RegHurt_tankid(int id){
+  for (RegIterator it = RegBegin(regTank); it != RegEnd(regTank); it = RegNext(it)) {
+    Tank *tank = RegEntry(regTank, it);
+    if(tank->id == id){
+      if(tank->blood > 1){
+        tank->blood --;
+      }
+      else{
+        if(tank->id == 0){
+          GameEndDead();
+        }
+        RegDelete(tank);
+      }
+    }
+  }
+}
 //
 //
 //
@@ -189,6 +209,7 @@ void GameInit(void) {
   map.flags = (Flag *)malloc(sizeof(Flag) * map.size.x * map.size.y);
   game.alive = true;
   game.state = Normal;
+  renderer.Bloodprint = false;
   
   // Step1: Create the margin.(Alrady written)
   for (int y = 0; y < map.size.y; ++y)
@@ -213,6 +234,7 @@ void GameInit(void) {
     tank->move_cool = 0;
     tank->isOperate = false;
     tank->id = 0;
+    tank->blood = config.PlayerBlood;
   }
 
   // Step3: Create AI tank. (Do similar things as player's tank.)
@@ -235,6 +257,7 @@ void GameInit(void) {
       tank->bullet_cool = 0;
       tank->move_cool = 0;
       tank->isOperate = true;
+      tank->blood = config.EnemyBlood;
       tank->id = i+1;
     }
     else{
@@ -303,6 +326,9 @@ void GameInput(void) {
     }
     else if (game.keyHit == 'q') {
       game.state = God;
+    }
+    else if (game.keyHit == 'b') {
+      renderer.Bloodprint = !renderer.Bloodprint;
     }
   }
   else{
@@ -444,13 +470,15 @@ void GameUpdate(void) {
     }
     
     else if (bullet->id == 0 && Tankcheck(newPos) > 0){
-      RegDelete_tankid(Tankcheck(newPos));
+      RegHurt_tankid(Tankcheck(newPos));
+      // RegDelete_tankid(Tankcheck(newPos));
       bullet->hit = true;
     }
 
     else if (bullet->id > 0 && Tankcheck(newPos) == 0){
       if(game.state == Normal){
-        GameEndDead();
+        // GameEndDead();
+        RegHurt_tankid(Tankcheck(newPos));
       }
       bullet->hit = true;
     }

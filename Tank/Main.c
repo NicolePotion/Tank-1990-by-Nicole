@@ -29,7 +29,9 @@ int main(void) {
   config.nWalls = 3;
 
   // Other parameter.
-  config.EnemyPower = 5;   // 0-10  - No shooting when 0;Strongest shooting when 10.
+  config.EnemyPower = 5;   // 0-10  - No shooting when 0;Most frequently shooting when 10.
+  config.EnemyBlood = 4;
+  config.PlayerBlood = 2;
 
   // Run the game.
   GameLifecycle();

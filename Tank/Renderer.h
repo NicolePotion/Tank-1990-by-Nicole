@@ -34,6 +34,7 @@ typedef struct {
   Color *colorsPrev; // Character colors of the previous frame.
   char *cs;          // Characters of the current frame.
   Color *colors;     // Character colors of the current frame.
+  bool Bloodprint;
 } Renderer;
 
 // The renderer singleton.
@@ -96,6 +97,10 @@ void RdrClear(void) {
         RdrPutChar(Add(pos, (Vec){x, y}), map.flags[Idx(pos)], TK_AUTO_COLOR);
       }
     }
+
+    for (int x = -1; x <= 1; ++x){
+      RdrPutChar(Add(pos, (Vec){x, 2}), map.flags[Idx(Add(pos, (Vec){x, 2}))], TK_AUTO_COLOR);
+    }
   }
 
   // Clear bullets.
@@ -115,13 +120,24 @@ void RdrRender() {
     Vec pos = tank->pos;
     Color color = tank->color;
 
-    // TODO: You may need to delete or add codes here.
-    
+    // Render the tank with the current direction.
     for (int y = -1; y <= 1; ++y){
       for (int x = -1; x <= 1; ++x){
         RdrPutChar(Add(pos, (Vec){x, y}), Tanklook[tank->dir][1-y][x+1], color);
       }
     }
+
+
+
+    // Render the blood at the top of the tank.
+    if (renderer.Bloodprint == true){
+      char blood_ = '0'+ tank->blood;
+      RdrPutChar(Add(pos, (Vec){-1, 2}), '[', color);
+      RdrPutChar(Add(pos, (Vec){0, 2}), blood_, color);
+      RdrPutChar(Add(pos, (Vec){1, 2}), ']', color);
+    }
+    
+    
   }
 
   // Render bullets.

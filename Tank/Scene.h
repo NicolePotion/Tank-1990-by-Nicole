@@ -57,15 +57,16 @@ typedef enum {
 /// RegDelete(tank); //! `free` is called here.
 /// ```
 typedef struct {
-  TK_REG_AUTH;   // Authorize `Tank` to make it compatible with registries, see `Registry.h`.
-  Vec pos;       // Position.
-  Dir dir;       // Direction.
-  Color color;   // Color of the tank and its bullets.
-  bool isPlayer; // Whether this tank is player or enemy.
-  bool isOperate;
-  int bullet_cool;
-  int move_cool;
-  int id;
+  TK_REG_AUTH;      // Authorize `Tank` to make it compatible with registries, see `Registry.h`.
+  Vec pos;          // Position.
+  Dir dir;          // Direction.
+  Color color;      // Color of the tank and its bullets.
+  bool isPlayer;    // Whether this tank is player or enemy.
+  bool isOperate;   // Set for the player's tank.Stop the move after a circle.
+  int bullet_cool;  // Stop the bullet shooting too frequently.
+  int move_cool;    // Stop the AI tank moving too frequently.
+  int id;           // Id help the tank to distinguish the bullet coming from whether the enermy or friends.
+  int blood;        // Every tank will not be deleted only shooted once.
 } Tank;
 
 char Tanklook[4][3][3] = {
