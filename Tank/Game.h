@@ -19,6 +19,7 @@
 typedef struct {
   char keyHit; // The keyboard key hit by the player at this frame.
   bool alive;
+  int state;
   // int  TankDirection;
 } Game;
 
@@ -53,6 +54,16 @@ void RegDelete_tankid(int id){
   }
 }
 
+// Count the number of the tank.
+int Tankcount(void){
+  int t = 0;
+  for (RegIterator it = RegBegin(regTank); it != RegEnd(regTank); it = RegNext(it)) {
+    Tank *tank = RegEntry(regTank, it);
+    t++;
+  }
+  return t;
+}
+
 
 // Create 3*3 something.
 void Creating3by3(int num, char object){
@@ -83,7 +94,40 @@ void Creating3by3(int num, char object){
   }
 }
 
-void GameEnd(void){
+void GameEndSuccess(void){
+  char* Dead1 = "You have pass the challenge!";
+  char* Dead2 = "Game over";
+  char* Dead3 = "Press anything to exit";
+  int len = strlen(Dead1);
+  int startposy = (map.size.y-3)/2;
+  int startposx = (map.size.x - len)/2;
+  Vec pos;
+
+  for (int y = startposy - 1; y < startposy + 4; ++y)
+    for (int x = startposx - 2; x < startposx + len + 2; ++x) {
+      Vec pos = {x, y};
+      if (Tankcheck(pos) >= 0){
+        RegDelete_tankid(Tankcheck(pos));
+      }
+      Flag flag;
+      if (x == startposx - 2 || y == startposy - 1 || x == startposx + len + 1 || y == startposy + 3){
+        flag = eFlagSolid;
+        map.flags[Idx(pos)] = flag;
+        // RdrPutChar(pos, map.flags[Idx(pos)], TK_AUTO_COLOR);
+      }
+      else{
+        flag = eFlagNone;
+        map.flags[Idx(pos)] = flag;
+        RdrPutChar(pos, map.flags[Idx(pos)], TK_AUTO_COLOR);
+      }
+    }
+
+  RdrPutString(startposy+2,Dead1, TK_NORMAL);
+  RdrPutString(startposy+1, Dead2, TK_NORMAL);
+  RdrPutString(startposy, Dead3, TK_RED);
+  game.alive = false;
+}
+void GameEndDead(void){
   char* Dead1 = "You are shooted!";
   char* Dead2 = "Game over";
   char* Dead3 = "Press anything to exit";
@@ -115,7 +159,6 @@ void GameEnd(void){
   RdrPutString(startposy+1, Dead2, TK_NORMAL);
   RdrPutString(startposy, Dead3, TK_RED);
   game.alive = false;
-
 }
 //
 //
@@ -145,6 +188,7 @@ void GameInit(void) {
   RegInit(regBullet);
   map.flags = (Flag *)malloc(sizeof(Flag) * map.size.x * map.size.y);
   game.alive = true;
+  game.state = Normal;
   
   // Step1: Create the margin.(Alrady written)
   for (int y = 0; y < map.size.y; ++y)
@@ -255,7 +299,10 @@ void GameInput(void) {
       tank->isOperate = true;
     } 
     else if (game.keyHit == 'k' && tank->bullet_cool <= 0) {
-    tank->bullet_cool = 15; 
+      tank->bullet_cool = 15; 
+    }
+    else if (game.keyHit == 'q') {
+      game.state = God;
     }
   }
   else{
@@ -275,6 +322,9 @@ void GameUpdate(void) {
   // Clear all the tanks and bullets.
   RdrClear();
 
+  if (Tankcount() == 1){
+    GameEndSuccess();
+  }
   // Tranverse all the tanks,update there direction and position.
   for (RegIterator it = RegBegin(regTank); it != RegEnd(regTank); it = RegNext(it)) {
     Tank *tank = RegEntry(regTank, it);
@@ -399,7 +449,9 @@ void GameUpdate(void) {
     }
 
     else if (bullet->id > 0 && Tankcheck(newPos) == 0){
-      GameEnd();
+      if(game.state == Normal){
+        GameEndDead();
+      }
       bullet->hit = true;
     }
 
@@ -426,7 +478,6 @@ void GameUpdate(void) {
   
   RdrRender();
   RdrFlush();
-
 }
 
 //

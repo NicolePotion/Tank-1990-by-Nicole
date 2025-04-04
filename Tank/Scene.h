@@ -32,6 +32,12 @@ typedef enum {
   eDirInvalid, // Invalid.
 } Dir;
 
+typedef enum {
+  Normal = 1, 
+  God = 2, 
+  Hard = 3, 
+} State;
+
 /// \brief Enums of the map flags.
 typedef enum {
   eFlagNone = ' ',  // Nothing here, passable.
