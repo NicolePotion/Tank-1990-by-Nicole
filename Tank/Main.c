@@ -1,5 +1,5 @@
 /// \file
-/// \brief Welcome to CS100 Tank! 
+/// \brief Welcome to CS100 Tank!
 /// It seems to be a really large project...
 /// But don't worry, we do not intend to make it difficult.
 /// Enjoy this homework and good luck, OwO!
@@ -25,13 +25,14 @@ int main(void) {
   config.fps = 30;
   config.mapSize = (Vec){70, 20};
   config.nEnemies = 4;
-  config.nSolids = 2;
-  config.nWalls = 3;
+  config.nSolids = 5;
+  config.nWalls = 8;
 
   // Other parameter.
-  config.EnemyPower = 5;   // 0-10  - No shooting when 0;Most frequently shooting when 10.
-  config.EnemyBlood = 4;
-  config.PlayerBlood = 2;
+  config.EnemyPower = 10; // 0-10  - No shooting when 0;Most frequently shooting when 10.
+  // You can show and close the blood by press the 'B'.
+  config.EnemyBlood = 7;  // 1-9   - please give a number in the range of 0-9.
+  config.PlayerBlood = 9; // 1-9   - please give a number in the range of 0-9.
 
   // Run the game.
   GameLifecycle();
